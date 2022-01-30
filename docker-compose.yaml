@@ -1,0 +1,12 @@
+version: '3.7'
+
+services:
+
+  postgres:
+    image: postgres:12.0
+    environment:
+      POSTGRES_PASSWORD: den_u
+      POSTGRES_USER: den
+      POSTGRES_DB: den_bd
+    ports:
+      - 5432:5432
