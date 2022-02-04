@@ -1,4 +1,5 @@
 from typing import Optional
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -13,13 +14,13 @@ class ItemCreate(ItemBase):
 
 
 class ItemModel(ItemBase):
-    id: int
     title: str
     description: str
 
 
 class UserBase(BaseModel):
     email: str
+    id: UUID
 
 
 class UserCreate(UserBase):
@@ -30,4 +31,8 @@ class UserModel(UserBase):
     email: str
     hashed_password: str
     # items: list[ItemModel] = []
+
+
+class ItemOut(ItemBase):
+    user: UserBase
 

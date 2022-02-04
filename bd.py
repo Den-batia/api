@@ -40,6 +40,6 @@ class Item(ormar.Model):
         pass
 
     id: UUID = ormar.UUID(primary_key=True, default=uuid4, uuid_format='string')
-    title: str = ormar.String(max_length=10, nullable=True)
-    description: str = ormar.Text(nullable=True)
+    title: str = ormar.String(max_length=10)
+    description: str = ormar.Text()
     user: User | None = ormar.ForeignKey(User, related_name="items")
