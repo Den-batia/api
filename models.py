@@ -19,16 +19,15 @@ class ItemModel(ItemBase):
 
 
 class UserBase(BaseModel):
-    email: str
-    id: UUID
+    username: str
 
 
 class UserCreate(UserBase):
+    is_active: bool = False
     password: str
 
 
 class UserModel(UserBase):
-    email: str
     hashed_password: str
     # items: list[ItemModel] = []
 
@@ -36,3 +35,6 @@ class UserModel(UserBase):
 class ItemOut(ItemBase):
     user: UserBase
 
+
+class TokenData(BaseModel):
+    username: str | None = None

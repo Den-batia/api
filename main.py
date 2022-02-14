@@ -1,9 +1,11 @@
 from fastapi import FastAPI, Depends
 import uvicorn
-from bd import database, metadata
+from bd import database
+from fastapi.security import OAuth2PasswordBearer
 from config import DATA_BD
 from endpoints import router
 
+token = OAuth2PasswordBearer(tokenUrl='token')
 app = FastAPI()
 
 
@@ -25,4 +27,4 @@ async def shutdown():
 
 
 if __name__ == '__main__':
-    uvicorn.run("main:app", port=8080, host="127.0.0.1", reload=True)
+    uvicorn.run("main:app", port=8080, host="127.0.0.1", reload=True,)
