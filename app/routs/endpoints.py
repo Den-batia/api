@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, Request, status, HTTPException
-from schemas.schemas import ItemModel, UserCreate
-from models.models import User, Item
+from fastapi import APIRouter, Depends, Request, status, HTTPException, Security
+from schemas.schemas import ItemModel, UserCreate, UserBase, RoleCreate, UserModel
+from models.models import User, Item, Role
 from fastapi.security import OAuth2PasswordRequestForm
 from depends.oauth import OAuth
+from constants.role import Roles
 
 router = APIRouter()
 
@@ -12,24 +13,27 @@ router = APIRouter()
 #     return {"user_id": user_id}
 
 
-@router.post("/create_user")
-async def create_user(request: Request, user: UserCreate):
-    hased_pass = OAuth.get_password_hash(user.password)
+@router.post("/create_user", response_model=User)
+async def create_user(user: UserCreate):
+    hashed_pass = OAuth.get_password_hash(user.password)
     data = user.dict()
-    data['hashed_password'] = hased_pass
-    data.pop('password')
-    # print(OAuth.verify_password(user.password, hased_pass))
-    try:
-        s = await User.objects.get_or_create(**data)
-        return s
-    except Exception as e:
-        return {'detail': e.detail}
+    data.update({'hashed_password': hashed_pass})
+    data = UserModel(**data)
+    role = await Role.objects.get_or_none(name=Roles.GUEST['name'])
+    user = await User.objects.get_or_none(username=data.username)
+    if user:
+        raise HTTPException(
+            status_code=409,
+            detail="The user with this username already exists in the system.",
+        )
+    user = await User.objects.create(**data.dict())
+    await user.roles.add(role)
+    return user
 
 
-@router.get("/{username}", response_model=User, response_model_exclude=['is_active', 'hashed_password', 'items__user'])
-async def create_user(username: str, user: User = Depends(OAuth.get_current_user)):
-    print(user.username)
-    a = await User.objects.select_related("items").get_or_none(username=username)
+@router.get("/about_me", response_model=User, response_model_exclude=['is_active', 'hashed_password', 'items__user', 'roles__roleuser'])
+async def create_user(user: User = Security(OAuth.get_current_user, scopes=['ADMIN'])):
+    a = await User.objects.select_related(['roles', 'items']).get_or_none(username=user.username)
     if not a:
         raise HTTPException(status_code=404, detail='Not found')
     return a
@@ -60,3 +64,10 @@ async def get_token(form_data: OAuth2PasswordRequestForm = Depends()):
         )
     access_token = OAuth.create_access_token(data={'sub': user.username})
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@router.post('/roles/create_role')
+async def create_role(data: RoleCreate):
+    role = await Role.objects.get_or_create(**data.dict())
+    return role
+

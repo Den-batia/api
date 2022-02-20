@@ -1,5 +1,5 @@
-from fastapi.security import OAuth2PasswordBearer
-from fastapi import HTTPException, Depends, status
+from fastapi.security import OAuth2PasswordBearer, SecurityScopes
+from fastapi import HTTPException, Depends, status, Security
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 from jose import jwt, JWTError
@@ -9,7 +9,8 @@ from core import config
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-token = OAuth2PasswordBearer(tokenUrl='token')
+token = OAuth2PasswordBearer(tokenUrl='token', scopes={'ADMIN': 'admin'})
+
 ACCESS_TOKEN_EXPIRE_MINUTES = config.ACCESS_TOKEN_EXPIRE_MINUTES
 ALGORITHM = config.ALGORITHM
 SECRET_KEY = config.SECRET_KEY
@@ -17,7 +18,7 @@ SECRET_KEY = config.SECRET_KEY
 
 class OAuth:
     @classmethod
-    async def get_current_user(cls, token: str = Depends(token)):
+    async def get_current_user(cls, security_scopes: SecurityScopes, token: str = Depends(token)):
         credentials_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",

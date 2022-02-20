@@ -38,3 +38,8 @@ class ItemOut(ItemBase):
 
 class TokenData(BaseModel):
     username: str | None = None
+
+
+class RoleCreate(BaseModel):
+    name: str
+    descriptions: str

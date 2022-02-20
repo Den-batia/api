@@ -1,7 +1,9 @@
 import json
 import urllib
 import wave
-token='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkZW4iLCJleHAiOjE2NDQ4Njk4NjZ9.HfI93bUFks5uLpyv9ppJ9su4ONePJxVar9aNCVuPL-Y'
+import asyncio
+from models.models import User
+token='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJxd2UiLCJleHAiOjE2NDU0MzMzMzZ9.WG1Q4GwMuiQ4xFCt2lotcAn2zNyQ9jpb59oV21gUulU'
 
 
 import requests
@@ -21,9 +23,9 @@ import requests
 
 # open stream based on the wave object which has been input.
 
-r = requests.get('http://127.0.0.1:8080/users/den', headers={'Authorization': 'Bearer ' + token})
+r = requests.get('http://127.0.0.1:8080/api/v1/users/about_me',  headers={'Authorization': 'Bearer ' + token})
+print()
 print(r.json())
-
 
 
 
