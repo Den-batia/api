@@ -19,23 +19,40 @@ SECRET_KEY = config.SECRET_KEY
 class OAuth:
     @classmethod
     async def get_current_user(cls, security_scopes: SecurityScopes, token: str = Depends(token)):
+        if security_scopes.scopes:
+            authenticate_value = f'Bearer ="{security_scopes.scope_str}"'
+        else:
+            authenticate_value = 'Bearer'
         credentials_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
+            headers={"WWW-Authenticate": authenticate_value},
         )
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             username: str = payload.get("sub")
+            role: str = payload.get('role')
+
             if username is None:
                 raise credentials_exception
-            token_data = TokenData(username=username)
+            token_data = TokenData(username=username, role=role)
+
         except JWTError:
             raise credentials_exception
-        user = await cls.get_user(username=token_data.username)
-        if user is None:
-            raise credentials_exception
-        return user
+
+        if role in security_scopes.scopes:
+            return token_data
+        raise HTTPException(
+            status_code=401,
+            detail="Not enough permissions",
+            headers={"WWW-Authenticate": authenticate_value},
+        )
+
+        # user = await cls.get_user(username=token_data.username)
+
+        # if user is None:
+        #     raise credentials_exception
+
 
     @classmethod
     def verify_password(cls, plain_password, hashed_password):
@@ -59,7 +76,7 @@ class OAuth:
 
     @classmethod
     async def get_user(cls, username: str):
-        user = await User.objects.get_or_none(username=username)
+        user = await User.objects.select_related('role').get_or_none(username=username)
         if user:
             return UserModel(**user.dict())
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incorrect username or password",)

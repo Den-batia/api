@@ -11,6 +11,16 @@ class MainMeta(ormar.ModelMeta):
     metadata = metadata
 
 
+class Role(ormar.Model):
+
+    class Meta(MainMeta):
+        pass
+
+    id: UUID = ormar.UUID(primary_key=True, default=uuid4, uuid_format='string')
+    name: str = ormar.String(max_length=50, index=True, unique=True)
+    descriptions: str = ormar.String(max_length=100)
+
+
 class User(ormar.Model):
 
     class Meta(MainMeta):
@@ -21,6 +31,7 @@ class User(ormar.Model):
     hashed_password: str = ormar.String(max_length=100)
     is_active: bool = ormar.Boolean(default=False)
     created_at: datetime.datetime = ormar.DateTime(default=datetime.datetime.now)
+    role: Role | None = ormar.ForeignKey(Role, related_name='users')
 
     @property_field
     def property_field_name(self):
@@ -36,14 +47,3 @@ class Item(ormar.Model):
     title: str = ormar.String(max_length=10)
     description: str | None = ormar.Text(default='')
     user: User | None = ormar.ForeignKey(User, related_name="items")
-
-
-class Role(ormar.Model):
-
-    class Meta(MainMeta):
-        pass
-
-    id: UUID = ormar.UUID(primary_key=True, default=uuid4, uuid_format='string')
-    name: str = ormar.String(max_length=50, index=True, unique=True)
-    descriptions: str = ormar.String(max_length=100)
-    users: Optional[Union[User, list[User]]] = ormar.ManyToMany(User, related_name="roles")

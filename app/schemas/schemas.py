@@ -27,8 +27,18 @@ class UserCreate(UserBase):
     password: str
 
 
+class RoleCreate(BaseModel):
+    name: str
+    descriptions: str
+
+
+class UserWithoutRole(UserBase):
+    hashed_password: str
+
+
 class UserModel(UserBase):
     hashed_password: str
+    role: RoleCreate
     # items: list[ItemModel] = []
 
 
@@ -38,8 +48,8 @@ class ItemOut(ItemBase):
 
 class TokenData(BaseModel):
     username: str | None = None
+    role: str | None = None
 
 
-class RoleCreate(BaseModel):
-    name: str
-    descriptions: str
+class RoleInBd(RoleCreate):
+    users: list[UserBase] = []

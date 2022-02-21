@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Request, status, HTTPException, Security
-from schemas.schemas import ItemModel, UserCreate, UserBase, RoleCreate, UserModel
+from schemas.schemas import ItemModel, UserCreate, UserBase, RoleCreate, UserModel, UserWithoutRole, TokenData, RoleInBd
 from models.models import User, Item, Role
 from fastapi.security import OAuth2PasswordRequestForm
 from depends.oauth import OAuth
@@ -18,22 +18,22 @@ async def create_user(user: UserCreate):
     hashed_pass = OAuth.get_password_hash(user.password)
     data = user.dict()
     data.update({'hashed_password': hashed_pass})
-    data = UserModel(**data)
-    role = await Role.objects.get_or_none(name=Roles.GUEST['name'])
+    data = UserWithoutRole(**data)
     user = await User.objects.get_or_none(username=data.username)
     if user:
         raise HTTPException(
             status_code=409,
             detail="The user with this username already exists in the system.",
         )
-    user = await User.objects.create(**data.dict())
-    await user.roles.add(role)
+    role = await Role.objects.get_or_none(name=Roles.GUEST['name'])
+    user = await User.objects.create(**data.dict(), role=role)
+    # await user.roles.add(role)
     return user
 
 
-@router.get("/about_me", response_model=User, response_model_exclude=['is_active', 'hashed_password', 'items__user', 'roles__roleuser'])
-async def create_user(user: User = Security(OAuth.get_current_user, scopes=['ADMIN'])):
-    a = await User.objects.select_related(['roles', 'items']).get_or_none(username=user.username)
+@router.get("/about_me", response_model=User, response_model_exclude=['is_active', 'hashed_password', 'items__user', 'role__roleuser'])
+async def create_user(user: TokenData = Security(OAuth.get_current_user, scopes=['ADMIN'])):
+    a = await User.objects.select_related(['role', 'items']).get_or_none(username=user.username)
     if not a:
         raise HTTPException(status_code=404, detail='Not found')
     return a
@@ -62,7 +62,7 @@ async def get_token(form_data: OAuth2PasswordRequestForm = Depends()):
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token = OAuth.create_access_token(data={'sub': user.username})
+    access_token = OAuth.create_access_token(data={'sub': user.username, 'role': user.role.name})
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -70,4 +70,10 @@ async def get_token(form_data: OAuth2PasswordRequestForm = Depends()):
 async def create_role(data: RoleCreate):
     role = await Role.objects.get_or_create(**data.dict())
     return role
+
+
+@router.get('/roles', response_model=list[RoleInBd])
+async def get_roles():
+    roles = await Role.objects.select_related('users').all()
+    return roles
 
